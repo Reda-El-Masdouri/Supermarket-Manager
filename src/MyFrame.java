@@ -3,7 +3,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -92,7 +98,7 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 		selectedProductTableModel = new DefaultTableModel();
 		selectedProductTableModel.addColumn("Product");
 		selectedProductTableModel.addColumn("Price");
-		JTable selectedProductTable = new JTable(selectedProductTableModel);
+		selectedProductTable = new JTable(selectedProductTableModel);
 		JScrollPane selectedProductScrollPanel = new JScrollPane(selectedProductTable);
 		selectedProductScrollPanel.setBounds(10, 10, 230, 280);
 		//selectedProductTable.setBackground(Color.yellow);
@@ -102,7 +108,7 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 		totalLabel.setFont(new Font("Ink Free", Font.BOLD, 18));
 		totalLabel.setForeground(Color.black);
 		
-		amountLabel = new JLabel("00.00");
+		amountLabel = new JLabel("0.00");
 		amountLabel.setBounds(90, 320, 100, 30);
 		amountLabel.setHorizontalAlignment(JTextField.CENTER);
 		amountLabel.setFont(new Font("Ink Free", Font.BOLD, 18));
@@ -202,13 +208,42 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 		propertiesPanel.add(clearButton);
 		propertiesPanel.add(saveButton);
 		
+		fillProductsTable();
+		
 		this.add(optionPanel);
 		this.add(allProductPanel);
 		this.add(selectedProductPanel);
 		this.add(propertiesPanel);
 		this.setVisible(true);
 	}
-
+	
+	private void fillProductsTable() {
+		File file = new File("file.txt");
+		try {
+			Scanner scanner = new Scanner(file);
+			
+			boolean isName = true;
+			String productName ="", productPrice ="";
+			while(scanner.hasNext()) { // we have data to write content by content
+				
+				if(isName) {
+					productName = scanner.next();
+					isName = false;
+				}
+				else {
+					productPrice = scanner.next();
+					Product product = new Product(productName,productPrice);
+					products.add(product);
+					productTableModel.addRow(new String[]{productName,productPrice});
+					isName = true;
+				}
+				
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource()==addButton) {
@@ -253,6 +288,47 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 					break;
 				}
 			}
+			}
+		}
+		if(e.getSource()==saveButton) {
+			File file = new File("file.txt");
+			FileWriter fw = null;
+			try {
+				fw = new FileWriter(file);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			PrintWriter pw = new PrintWriter(fw);
+			for(Product p : products) {
+				pw.println(p); // Product.toString
+			}
+			pw.close();
+		}
+		if(e.getSource()==productChoosenButton) {
+			float totalAmount = Float.valueOf(amountLabel.getText());
+			int index = productsTable.getSelectedRow();
+			if(index != -1) {
+				int quatity = Integer.valueOf(JOptionPane.showInputDialog(this, "How much units","1"));
+				String productName = products.get(index).getNameProduct();
+				float price = Float.valueOf(products.get(index).getPriceProduct())*quatity;
+				selectedProductTableModel.addRow(new String[]{productName,String.valueOf(price)});
+				totalAmount+=price;
+				amountLabel.setText(String.valueOf(totalAmount));
+			}
+		}
+		if(e.getSource()==deleteButton) {
+			selectedProductTableModel.setRowCount(0);
+			amountLabel.setText("0.00");
+		}
+		if(e.getSource()==productRemovedButton) {
+			int index = selectedProductTable.getSelectedRow();
+			if(index != -1) {
+				
+				float priceSelectedProduct = Float.valueOf((String) selectedProductTableModel.getValueAt(index, 1));
+				float totalAmount = Float.valueOf(amountLabel.getText()) - priceSelectedProduct;
+				amountLabel.setText(String.valueOf(totalAmount));
+				selectedProductTableModel.removeRow(index);
 			}
 		}
 		
