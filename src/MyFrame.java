@@ -9,6 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Scanner;
 
 import javax.swing.*;
@@ -51,6 +52,7 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 	JButton searchButton;
 	JButton clearButton;
 	JButton saveButton;
+	JButton exitButton;
 	
 	Border textFieldBorder1 = BorderFactory.createMatteBorder(1, 1, 1, 1, Color.LIGHT_GRAY);
 	Border emptyBorder = BorderFactory.createEmptyBorder();
@@ -63,6 +65,7 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 		//this.setBackground(Color.white);
 		this.setResizable(false);
 		this.getContentPane().setBackground(Color.white);
+		this.setUndecorated(true);
 		
 		products = new ArrayList();
 		
@@ -90,7 +93,7 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 		allProductPanel = new JPanel();
 		allProductPanel.setBounds(50, 80, 300, 400);
 		allProductPanel.setLayout(null);
-		allProductPanel.setBackground(Color.red);
+		allProductPanel.setBackground(Color.white);
 		allProductPanel.add(searchProductLabel);
 		allProductPanel.add(searchProductField);
 		allProductPanel.add(productsScrollPanel);
@@ -119,7 +122,7 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 		selectedProductPanel = new JPanel();
 		selectedProductPanel.setBounds(500, 80, 250, 370);
 		selectedProductPanel.setLayout(null);
-		selectedProductPanel.setBackground(Color.blue);
+		selectedProductPanel.setBackground(Color.white);
 		selectedProductPanel.add(totalLabel);
 		selectedProductPanel.add(amountLabel);
 		selectedProductPanel.add(selectedProductScrollPanel);
@@ -199,14 +202,22 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 		saveButton.setForeground(Color.black);
 		saveButton.addActionListener(this);
 		
+		exitButton = new JButton("Exit");
+		exitButton.setBounds(500, 0, 100, 50);
+		exitButton.setFocusable(false);
+		exitButton.setFont(new Font("Ink Free",Font.BOLD,18));
+		exitButton.setForeground(Color.black);
+		exitButton.addActionListener(this);
+		
 		propertiesPanel = new JPanel();
-		propertiesPanel.setBounds(50, 500, 500, 50);
+		propertiesPanel.setBounds(50, 500, 600, 50);
 		propertiesPanel.setLayout(null);
 		propertiesPanel.add(addButton);
 		propertiesPanel.add(modifyButton);
 		propertiesPanel.add(searchButton);
 		propertiesPanel.add(clearButton);
 		propertiesPanel.add(saveButton);
+		propertiesPanel.add(exitButton);
 		
 		fillProductsTable();
 		
@@ -240,7 +251,7 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 				
 			}
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "File not found", "ERROR", JOptionPane.OK_OPTION);;
 		}
 	}
 	
@@ -258,11 +269,14 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 			}
 		}
 		if(e.getSource()==clearButton) {
-			// we get the index of the selected product in the all products table
-			int index = productsTable.getSelectedRow();
-			if(index != -1) { // a row is selected
-				products.remove(index); // remove the product from the array list
-				productTableModel.removeRow(index); // remove it from the table
+			int confirm = JOptionPane.showConfirmDialog(this, "Are you sure to delete this product ?", "Confirmation", JOptionPane.YES_NO_OPTION);
+			if(confirm == JOptionPane.YES_OPTION) {
+				// we get the index of the selected product in the all products table
+				int index = productsTable.getSelectedRow();
+				if(index != -1) { // a row is selected
+					products.remove(index); // remove the product from the array list
+					productTableModel.removeRow(index); // remove it from the table 
+				}
 			}
 		}
 		if(e.getSource()==modifyButton) {
@@ -296,8 +310,7 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 			try {
 				fw = new FileWriter(file);
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				JOptionPane.showMessageDialog(this, "Impossible to write on the file", "ERROR", JOptionPane.OK_OPTION);;
 			}
 			PrintWriter pw = new PrintWriter(fw);
 			for(Product p : products) {
@@ -318,8 +331,12 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 			}
 		}
 		if(e.getSource()==deleteButton) {
-			selectedProductTableModel.setRowCount(0);
-			amountLabel.setText("0.00");
+			int confirm = JOptionPane.showConfirmDialog(this, "Are you sure to cleare the table ?", "Confirmation", JOptionPane.YES_NO_OPTION);
+			if(confirm == JOptionPane.YES_OPTION) {
+				selectedProductTableModel.setRowCount(0);
+				amountLabel.setText("0.00");
+			}
+			
 		}
 		if(e.getSource()==productRemovedButton) {
 			int index = selectedProductTable.getSelectedRow();
@@ -329,6 +346,43 @@ public class MyFrame extends JFrame implements ActionListener, KeyListener{
 				float totalAmount = Float.valueOf(amountLabel.getText()) - priceSelectedProduct;
 				amountLabel.setText(String.valueOf(totalAmount));
 				selectedProductTableModel.removeRow(index);
+			}
+		}
+		if(e.getSource()==exitButton) {
+			int confirm = JOptionPane.showConfirmDialog(this, "Are you sure to exit ?", "Confirmation", JOptionPane.YES_NO_OPTION);
+			if(confirm == JOptionPane.YES_OPTION) {
+				this.dispose();
+			}
+		}
+		if(e.getSource() == payButton) {
+			String payedAmountString = "";
+			while(payedAmountString.equals("")) {
+				payedAmountString = JOptionPane.showInputDialog(this, "Enter the payed amount", "payment", JOptionPane.INFORMATION_MESSAGE);
+			}
+			float payedAmount = Float.valueOf(payedAmountString);
+			if(payedAmount >= Float.valueOf(amountLabel.getText())) {
+				String ticket = "****************************************************************\n\n";
+				ticket += "	    ** Your Bill ** \n\n";
+				ticket += "*************************************************************\n";
+				Date date = new Date();
+				ticket += date + "\n\n";
+				ticket += "Product			Price\n";
+				for(int i=0;i<selectedProductTableModel.getRowCount();i++) {
+					ticket += selectedProductTableModel.getValueAt(i, 0)+"			"+selectedProductTableModel.getValueAt(i, 1)+"\n";
+				}
+				ticket += "\n\n";
+				ticket += "Total: 				"+ amountLabel.getText()+"\n";
+				ticket += "Payed amount: 		"+ String.valueOf(payedAmount)+"\n";
+				float changeToGive = (payedAmount - Float.valueOf(amountLabel.getText()));
+				ticket += "Change to give: 		"+changeToGive+"\n\n";
+				ticket += "	** See you soon **";
+				
+				Bill bill = new Bill();
+				bill.textArea.setText(ticket);
+				bill.setVisible(true);
+			}
+			else {
+				JOptionPane.showMessageDialog(this, "You enter an amount less than total","ERROR", JOptionPane.ERROR_MESSAGE);
 			}
 		}
 		
